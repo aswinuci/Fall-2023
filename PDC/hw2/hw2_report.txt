@@ -1,0 +1,118 @@
+Steps for PDC Homework 2
+
+1) Have 2 machines ( Normal / VM as per convinience)
+2) Connect both the machines in same network ( wifi ).
+3) Find the IP address of both the machines by running the following command in terminal
+    Mac :   ipconfig getifaddr en0
+    Ubuntu: ip a | grep 'inet ' // Space after inet ('inet ') is important . Pick the one that has 192.xx or 10.xx
+4)  In your Sender machine create a sender.c file and copy paste the code below
+----------------------------------------------------------------------------------------------------------------------------------------------
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+
+int main() {
+    int server_socket;
+    char message[100];
+    char server_message[100];
+    
+    // Create a socket
+    server_socket = socket(AF_INET, SOCK_STREAM, 0);
+    
+    // Define the server address (Ubuntu's IP address and port)
+    struct sockaddr_in server_address;
+    server_address.sin_family = AF_INET;
+    server_address.sin_port = htons(9002);
+    server_address.sin_addr.s_addr = inet_addr("10.13.194.76");  // Change to the Ubuntu system's IP
+    
+    // Connect to the server
+    int connection_status = connect(server_socket, (struct sockaddr*)&server_address, sizeof(server_address));
+    if (connection_status == -1) {
+        printf("Error: Connection failed\n");
+        exit(1);
+    }
+    
+    // Send a message to the server
+    strcpy(message, "Hey there, how's it going?");
+    send(server_socket, message, sizeof(message), 0);
+    
+    // Receive a message from the server (Ubuntu)
+    recv(server_socket, server_message, sizeof(server_message), 0);
+    printf("Received from Ubuntu: %s\n", server_message);
+    
+    // Close the socket
+    close(server_socket);
+    
+    return 0;
+}
+-----------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+5) In Receiver machine create a receiver.c file and copy paste the code below 
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+
+int main() {
+    int server_socket, client_socket;
+    char server_message[100] = "It's going great!";
+    char client_message[100];
+    
+    // Create a socket
+    server_socket = socket(AF_INET, SOCK_STREAM, 0);
+
+    int opt = 1;
+    setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+
+    
+    // Define the server address
+    struct sockaddr_in server_address;
+    server_address.sin_family = AF_INET;
+    server_address.sin_port = htons(9002);
+    server_address.sin_addr.s_addr = INADDR_ANY;
+    
+    // Bind the socket
+    bind(server_socket, (struct sockaddr*)&server_address, sizeof(server_address));
+    
+    // Listen for incoming connections
+    listen(server_socket, 1000);
+    
+    // Accept a connection
+    client_socket = accept(server_socket, NULL, NULL);
+    
+    // Receive a message from the client (Mac)
+    recv(client_socket, client_message, sizeof(client_message), 0);
+    printf("Received from Mac: %s\n", client_message);
+    
+    // Send a message to the client (Mac)
+    send(client_socket, server_message, sizeof(server_message), 0);
+    
+    // Close the sockets
+    close(client_socket);
+    close(server_socket);
+    
+    return 0;
+}
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+6) In receiver machine , turn off firewall.
+    Ubuntu : sudo ufw disable
+
+7) Compile receiver program 
+    gcc -o receiver receiver.c
+
+8) Run Receiver
+    ./receiver
+
+9) Compile sender.c in sender machine
+    gcc -o sender sender.c
+
+10) Run sender 
+    ./sender
+
