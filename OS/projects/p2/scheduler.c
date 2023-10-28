@@ -8,141 +8,166 @@
  */
 
 #undef _FORTIFY_SOURCE
-#define STACK_SIZE 1000
 
-#include <unistd.h>
-#include <signal.h>
 #include <setjmp.h>
 #include "system.h"
 #include "scheduler.h"
+#include <signal.h>
+#include <unistd.h>
 
-/**
- * Needs:
- *   setjmp()
- *   longjmp()
- */
+#define STACK_SIZE (64 * 1024)
+int id = 0;
 
-/* research the above Needed API and design accordingly */
-static int id = 0;
 struct thread
 {
-    int tid;
-    jmp_buf context; /* This will be used only in execute, where we store the context of thread */
-    enum status
-    {
-        STATUS_INIT,
-        STATUS_RUNNING,
-        STATUS_SLEEPING,
-        STATUS_TERMINATED
-    } status; /* While creating the thread , maark status as staus_init */
-    struct stack
-    {
-        void *memory_; /* THis will also be used to assign memory */
-        void *memory;
-    } stack;
-    struct thread *next;
+  jmp_buf name;
+  void *arg;
+
+  void (*entry)(void *arg);
+
+  int tid;
+  enum
+  {
+    status_thread_init,
+    status_thread_running,
+    status_thread_sleeping,
+    status_thread_terminate
+  } status;
+  struct
+  {
+    void *memory_;
+    void *memory;
+  } stack;
+  struct thread *link;
 };
 
 static struct
 {
-    struct thread *head;
-    struct thread *current;
-    jmp_buf context;
+  struct thread *head;
+  struct thread *current_thread;
+  jmp_buf context;
 } state;
 
-int scheduler_create()
+void scheduler_destroy(void)
 {
-    /* Allocate memory for thread */
-    /* Set status as init */
-    /* Allocate memory for stack in memory_ */
-    /* Realign the memory to memory using memory_realign(memory_,page_size()) */
-    /* Add the thread to the end pf the state structure */
+  struct thread *thread = state.head->link;
 
-    struct thread *new_thread = (struct thread *)malloc(sizeof(struct thread));
-    if (new_thread == NULL)
-    {
-        fprintf(stderr, "Memory allocation for thread failed.\n");
-        return 1;
-    }
+  for (; thread != state.head;)
+  {
+    struct thread *next = thread->link;
+    free(thread->stack.memory_);
+    free(thread);
+    thread = next;
+  }
 
-    new_thread->tid = ++id;
-    new_thread->status = STATUS_INIT;
+  free(state.head->stack.memory_);
+  free(state.head);
 
-    new_thread->stack.memory_ = malloc(STACK_SIZE);
-    if (new_thread->stack.memory_ == NULL)
-    {
-        fprintf(stderr, "Memory allocation for stack failed.\n");
-        free(new_thread);
-        return 1;
-    }
-
-    new_thread->stack.memory = memory_align(new_thread->stack.memory_, STACK_SIZE);
-
-    new_thread->next = NULL;
-    if (state.head == NULL)
-    {
-        state.head = new_thread;
-    }
-    else
-    {
-        struct thread *current = state.head;
-        while (current->next != NULL)
-        {
-            current = current->next;
-        }
-        current->next = new_thread;
-    }
-
-    return 0;
+  state.head = NULL;
+  state.current_thread = NULL;
 }
 
-struct thread* thread_candidate(){
-    /* Need to check for thread that is in Initial state or sleeping state and return it */
-    struct thread *current = state.head;
-    while(current != NULL){
-        if(current->status == STATUS_INIT || current->status == STATUS_SLEEPING){
-            return current;
-        }
-        current = current->next;
-    }
-    return NULL;
+int scheduler_create(scheduler_fnc_t fnc, void *arg)
+{
+  struct thread *new_thread = (struct thread *)malloc(sizeof(struct thread));
+  size_t PAGE_SIZE = page_size();
+
+  if (new_thread == NULL)
+  {
+    TRACE("Failed to allocate memory for a new thread");
+    exit(0);
+  }
+
+  new_thread->arg = arg;
+  new_thread->entry = fnc;
+  new_thread->tid = id++;
+  new_thread->status = status_thread_init;
+  new_thread->stack.memory_ = malloc(STACK_SIZE + PAGE_SIZE);
+  new_thread->stack.memory = memory_align(new_thread->stack.memory_, PAGE_SIZE);
+
+  if (state.head == NULL)
+  {
+    state.head = new_thread;
+    new_thread->link = new_thread;
+    state.current_thread = new_thread;
+  }
+  else
+  {
+    new_thread->link = state.head->link;
+    state.head->link = new_thread;
+  }
+  return 0;
 }
 
+struct thread *scheduler_thread_candidate(void)
+{
+  struct thread *thread, *next;
+
+  for (thread = state.current_thread->link; thread != state.current_thread; thread = next)
+  {
+    next = thread->link;
+    if (thread->status != status_thread_terminate)
+    {
+      return thread;
+    }
+  }
+
+  return NULL;
+}
+
+void scheduler_change(void)
+{
+  uint64_t rsp;
+  struct thread *thread = scheduler_thread_candidate();
+
+  if (thread == NULL)
+  {
+    longjmp(state.context, 1);
+  }
+
+  state.current_thread = thread;
+  if (state.current_thread->status == status_thread_init)
+  {
+    rsp = (uint64_t)state.current_thread->stack.memory + STACK_SIZE;
+    __asm__ volatile("mov %[rs], %%rsp"
+                     : [rs] "+r"(rsp)::);
+
+    state.current_thread->entry(state.current_thread->arg);
+    state.current_thread->status = status_thread_terminate;
+    longjmp(state.context, 1);
+  }
+  else
+  {
+    state.current_thread->status = status_thread_running;
+    longjmp(thread->name, 1);
+  }
+}
+
+void scheduler_yield()
+{
+  if (setjmp(state.current_thread->name) == 0)
+  {
+    state.current_thread->status = status_thread_sleeping;
+    longjmp(state.context, 1);
+  }
+}
 
 void scheduler_execute(void)
 {
-    if (state.head == NULL)
+  if (setjmp(state.context) == 0)
+  {
+    signal(SIGALRM, (__sighandler_t)scheduler_yield);
+    alarm(1);
+    scheduler_change();
+  }
+  else
+  {
+    if (scheduler_thread_candidate() != NULL)
     {
-        printf("No threads to execute\n");
-        return;
+      signal(SIGALRM, (__sighandler_t)scheduler_yield);
+      alarm(1);
+      scheduler_change();
     }
-
-    /* Loop through till all threads execute */
-    struct thread* candidate = NULL;
-    do{
-        candidate = thread_candidate();
-        if(candidate == NULL){
-            printf("No threads to execute\n");
-            break;
-        }
-        candidate->status = STATUS_RUNNING;
-        state.current = candidate;
-        printf("Thread candidate is %d\n",candidate->tid);
-        /* if(setjmp(state.context) == 0){
-            longjmp(candidate->context,1);
-        }
-        else{
-            candidate->status = STATUS_TERMINATED;
-            free(candidate->stack.memory_);
-            free(candidate);
-        } */
-    }while(candidate!=NULL);
-
-    struct thread *current = state.head;
-    while (current != NULL)
-    {
-        printf("Thread %d is present, its stack address was %p (hex) and is now aligned to %lu \n", current->tid, current->stack.memory_, (size_t)current->stack.memory);
-        current = current->next;
-    }
+  }
+  scheduler_destroy();
 }
-
