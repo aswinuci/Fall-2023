@@ -11,12 +11,12 @@
 unsigned int upperLimit =0;
 
 
-int isPrime(int val){
-    if (val <= 1) return 0;
-    if (val <= 3) return 1;
-    if (val % 2 == 0 || val % 3 == 0) return 0;
-    for(int i=5;i<=sqrt(val);i++){
-        if(val%i==0)return 0;
+int isPrime(int num){
+    if (num <= 1) return 0;
+    if (num <= 3) return 1;
+    if (num % 2 == 0 || num % 3 == 0) return 0;
+    for(int i=5;i<=sqrt(num);i++){
+        if(num%i==0)return 0;
     }
     return 1;
 }
@@ -46,7 +46,7 @@ void primes_sequential(carr_d_t *primes_list, unsigned int max){
     
     // YOUR CODE GOES HERE
     upperLimit = max;
-    for(unsigned int i=2;i<upperLimit;i++){
+    for(unsigned int i=2;i<=upperLimit;i++){
         if(isPrime(i))carr_d_push(primes_list, i);
     }
     printf("Sequential\n");
@@ -63,14 +63,14 @@ void primes_parallel(carr_d_t *primes_list, unsigned int max, \
 
     for (unsigned int i = 0; i < numThreads; i++) {
         if (pthread_create(&threads[i], NULL, find_primes, primes_list) != 0) {
-            perror("pthread_create");
+            perror("Error creating Threads\n");
             return;
         }
     }
 
     for (unsigned int i = 0; i < numThreads; i++) {
         if (pthread_join(threads[i], NULL) != 0) {
-            perror("pthread_join");
+            perror("Error Joining Threads and terminating program\n");
             return;
         }
     }
