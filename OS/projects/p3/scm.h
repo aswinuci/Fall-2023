@@ -56,7 +56,7 @@ void *scm_malloc(struct scm *scm, size_t n);
  * return: the base memory address of the duplicated C string or NULL on error
  */
 
-char *scm_strdup(struct scm *scm, const char *s);
+char *scm_strdup(struct scm *scm, const char *s); // Get string value , get mallc and return new string addr
 
 /**
  * Analogous to the standard C free function, but using SCM region.
@@ -65,7 +65,7 @@ char *scm_strdup(struct scm *scm, const char *s);
  * p  : a pointer to the start of a previously allocated memory
  */
 
-void scm_free(struct scm *scm, void *p);
+void scm_free(struct scm *scm, void *p); // Not needed , but can implment
 
 /**
  * Returns the number of SCM bytes utilized thus far.
@@ -97,6 +97,6 @@ size_t scm_capacity(const struct scm *scm);
  * return: the base memory address within the SCM region
  */
 
-void *scm_mbase(struct scm *scm);
+void *scm_mbase(struct scm *scm); /* Root address */
 
 #endif /* _SCM_H_ */

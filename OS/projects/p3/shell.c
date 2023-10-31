@@ -30,7 +30,7 @@
 static struct {
 	int i, n;
 	char history[H][N];
-	struct termios termios;
+	struct termios termios; /* Important data structure */
 } state;
 
 static void
@@ -44,7 +44,7 @@ configure(void)
 	termios = state.termios;
 	termios.c_lflag &= ~(ECHO | ICANON);
 	termios.c_cc[VMIN] = 1;
-	if (tcsetattr(STDIN_FILENO, TCSANOW, &termios)) {
+	if (tcsetattr(STDIN_FILENO, TCSANOW, &termios)) { /* Set the configuration in the terminal */
 		EXIT("tcgetattr()");
 	}
 }

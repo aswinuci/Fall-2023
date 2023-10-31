@@ -127,7 +127,7 @@ shell_fnc(void *arg, const char *s)
 		const char *face;
 		int (*fnc)(struct avl *avl, const char *s);
 	} CMDS[] = {
-		{ 0, "quit", quit },
+		{ 0, "quit", quit }, /* Number of args , argument passed in terminal , function corresponding to it */
 		{ 0, "help", help },
 		{ 0, "info", info },
 		{ 0, "list", list },

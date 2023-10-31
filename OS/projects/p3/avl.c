@@ -89,7 +89,8 @@ update(struct avl *avl, struct node *root, const char *item)
 	int d;
 
 	if (!root) {
-		if (!(root = scm_malloc(avl->scm, sizeof (struct node)))) {
+		if (!(root = scm_malloc(avl->scm, sizeof (struct node)))) { /* Allocate in the spcial region of memory */
+		/* We dont want malloc , we want scm_malloc */
 			TRACE(0);
 			return NULL;
 		}

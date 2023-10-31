@@ -10,7 +10,7 @@
 #include "system.h"
 #include "term.h"
 
-static int nocolor;
+static int nocolor; /* 0 = color, 1 = no color */
 
 void
 term_init(int nocolor_)
