@@ -33,7 +33,7 @@ Shell -> Read things at char level , and read special chars
 Run it 
 -> make
 -> ./cs238 + we need to give a file 
-dd = if=dev/zero of=file bs=4096 count=100000
+dd=if=/dev/zero of=file bs=4096 count=100000
 
 File will be created of size 41MB
 
