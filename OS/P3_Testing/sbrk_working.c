@@ -4,7 +4,7 @@
 
 int main() {
     // Virtual address where you want the heap to start
-    uintptr_t VIRT_ADDR = 0x600000000000;
+    uintptr_t VIRT_ADDR = 20000;
 
     // File size in bytes
     size_t file_size = 4096 * 100000;  // 4 KB * 100000 = 400 MB
