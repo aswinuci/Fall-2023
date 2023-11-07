@@ -4,9 +4,9 @@
 #include<stdlib.h>
 
 unsigned int NG;
-Mat* A;
-Mat* B;
-Mat* C;
+Mat* AG;
+Mat* BG;
+Mat* CG;
 
 // Additional B temporary matrix for faster row-wise access
 Mat BT;
@@ -27,9 +27,9 @@ void* compute_row(void* args) {
         for (int j = 0; j < NG; j++) {
             double sum = 0.0;
             for (int k = 0; k < NG; k++) {
-                sum += A->ptr[i * A->n + k] * BT.ptr[j * BT.n + k];
+                sum += AG->ptr[i * AG->n + k] * BT.ptr[j * BT.n + k];
             }
-            C->ptr[i * C->n + j] = sum;
+            CG->ptr[i * CG->n + j] = sum;
         }
     }
     
@@ -37,12 +37,12 @@ void* compute_row(void* args) {
 }
 
 
-void mat_multiply(Mat* m1, Mat* m2, Mat* m3, unsigned int threads) {
+void mat_multiply(Mat* A, Mat* B, Mat* C, unsigned int threads) {
     // Assign matrix values and sizes to global variables
     NG = A->n;
-    A = m1;
-    B = m2;
-    C = m3;
+    AG = A;
+    BG = B;
+    CG = C;
     unsigned int NUM_T = threads;
 
     // Initialize pthread attribute value
