@@ -3,10 +3,10 @@
 #include <pthread.h>
 #include<stdlib.h>
 
-unsigned int NG;
-Mat* AG;
-Mat* BG;
-Mat* CG;
+unsigned int N;
+Mat* A;
+Mat* B;
+Mat* C;
 
 // Additional B temporary matrix for faster row-wise access
 Mat BT;
@@ -24,12 +24,12 @@ void* compute_row(void* args) {
     int end_row = argument->end_row;
 
     for (int i = start_row; i <= end_row; i++) {
-        for (int j = 0; j < NG; j++) {
+        for (int j = 0; j < N; j++) {
             double sum = 0.0;
-            for (int k = 0; k < NG; k++) {
-                sum += AG->ptr[i * AG->n + k] * BT.ptr[j * BT.n + k];
+            for (int k = 0; k < N; k++) {
+                sum += A->ptr[i * A->n + k] * BT.ptr[j * BT.n + k];
             }
-            CG->ptr[i * CG->n + j] = sum;
+            C->ptr[i * C->n + j] = sum;
         }
     }
     
@@ -37,12 +37,12 @@ void* compute_row(void* args) {
 }
 
 
-void mat_multiply(Mat* A, Mat* B, Mat* C, unsigned int threads) {
+void mat_multiply(Mat* matrix1, Mat* matrix2, Mat* matrix3, unsigned int threads) {
     // Assign matrix values and sizes to global variables
-    NG = A->n;
-    AG = A;
-    BG = B;
-    CG = C;
+    N = matrix1->n;
+    A = matrix1;
+    B = matrix2;
+    C = matrix3;
     unsigned int NUM_T = threads;
 
     // Initialize pthread attribute value
@@ -53,21 +53,21 @@ void mat_multiply(Mat* A, Mat* B, Mat* C, unsigned int threads) {
     pthread_t thread_pool[NUM_T];
     ThreadArgs args_pool[NUM_T];
 
-    // Assign B matrix values to the transposed B temporary matrix
-    BT.ptr = (double*)malloc(B->m * B->n * sizeof(double));
-    BT.m = B->n;
-    BT.n = B->m;
+    // Assign matrix2 matrix values to the transposed matrix2 temporary matrix
+    BT.ptr = (double*)malloc(matrix2->m * matrix2->n * sizeof(double));
+    BT.m = matrix2->n;
+    BT.n = matrix2->m;
     
-    for (unsigned int i = 0; i < B->m; i++) {
-        for (unsigned int j = 0; j < B->n; j++) {
-            BT.ptr[j * BT.n + i] = B->ptr[i * B->n + j];
+    for (unsigned int i = 0; i < matrix2->m; i++) {
+        for (unsigned int j = 0; j < matrix2->n; j++) {
+            BT.ptr[j * BT.n + i] = matrix2->ptr[i * matrix2->n + j];
         }
     }
 
     // If the number of matrix rows is smaller than the total number of threads,
     // use the number of matrix rows as the number of work units
-    unsigned int n_split = NG < threads ? NG : threads;
-    unsigned int n_work = NG < threads ? 1 : NG / threads;
+    unsigned int n_split = N < threads ? N : threads;
+    unsigned int n_work = N < threads ? 1 : N / threads;
 
     for (unsigned int i = 0; i < n_split; i++) {
         ThreadArgs args;
