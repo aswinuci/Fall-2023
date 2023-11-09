@@ -279,7 +279,6 @@ avl_remove(struct avl *avl, const char *item) {
     return 0;
 }
 
-
 uint64_t
 avl_exists(const struct avl *avl, const char *item) {
     const struct node *node;
