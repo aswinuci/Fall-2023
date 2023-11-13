@@ -24,8 +24,8 @@ int main(int argc, char **argv){
     mat_fill_copy(&m_ctl, &m);
     
 #ifdef DEBUG
-    printf("Original:\n");
-    mat_print(&m);
+    // printf("Original:\n");
+    // mat_print(&m);
 #endif
 
     // run and measure time taken
@@ -42,8 +42,8 @@ int main(int argc, char **argv){
 
     // show result
 #ifdef DEBUG
-    printf("\nTransposed:\n");
-    mat_print(&m);
+    //  printf("\nTransposed:\n");
+    // mat_print(&m);
 #endif
 
     //check correctness
@@ -51,6 +51,7 @@ int main(int argc, char **argv){
         exit(1);
     
     //save results
+    printf("Program successful , Time taken: %.8f\n", end-start);
     fprintf(log_file, "%.8f\n",end-start);
     fclose(log_file);
     return 0;
