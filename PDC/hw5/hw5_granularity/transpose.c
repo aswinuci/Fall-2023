@@ -1,14 +1,15 @@
 /**
  ** SUBMIT ONLY THIS FILE
- ** NAME: .......
- ** UCI ID: .......
+ ** NAME: S Aswin.......
+ ** UCI ID: saswin.......
+  ** NAME: Shreya Pawaskar.......
+ ** UCI ID: pawaskas.......
  **
- ** Use only standard libraries.
- ** See description in header file.
+ **
  **/
 
 #include "util_common.h"
-#include "transpose.h" //implementing
+#include "transpose.h"
 #include "pthread.h"
 #include "stdlib.h"
 #include "stdio.h"
