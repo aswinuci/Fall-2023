@@ -23,10 +23,6 @@ int main(int argc, char **argv){
     mat_fill_incr(&m, 1);
     mat_fill_copy(&m_ctl, &m);
     
-#ifdef DEBUG
-    // printf("Original:\n");
-    // mat_print(&m);
-#endif
 
     // run and measure time taken
     double start, end;
@@ -41,10 +37,6 @@ int main(int argc, char **argv){
     }
 
     // show result
-#ifdef DEBUG
-    //  printf("\nTransposed:\n");
-    // mat_print(&m);
-#endif
 
     //check correctness
     if(mat_check_transpose(&m_ctl, &m))
