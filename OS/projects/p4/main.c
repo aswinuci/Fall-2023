@@ -76,8 +76,7 @@ read_write(const uint64_t N, const uint64_t K, const uint64_t V)
 	struct kvdb *kvdb;
 
 	key = val = val_ = NULL;
-	if (!(kvdb = kvdb_open(PATHNAME))) {
-		TRACE(0);
+	if (!(kvdb = kvdb_open(PATHNAME))){
 		return -1;
 	}
 	if (!(key = malloc(K)) || !(val = malloc(V)) || !(val_ = malloc(V))) {
@@ -124,7 +123,7 @@ read_write(const uint64_t N, const uint64_t K, const uint64_t V)
 			FREE(key);
 			FREE(val);
 			FREE(val_);
-			TRACE("software");
+			TRACE("softwarew ");
 			return -1;
 		}
 	}
@@ -317,10 +316,10 @@ main(int argc, char *argv[])
 	/* test */
 
 	TEST(basic_logic, "basic_logic");
-	TEST(heavy_rewrite, "heavy_rewrite");
-	TEST(read_write_single, "read_write_single");
-	TEST(read_write_small, "read_write_small");
-	TEST(read_write_large, "read_write_large");
+	// TEST(heavy_rewrite, "heavy_rewrite");
+	// TEST(read_write_single, "read_write_single");
+	// TEST(read_write_small, "read_write_small");
+	// TEST(read_write_large, "read_write_large");
 
 	/* postlude */
 

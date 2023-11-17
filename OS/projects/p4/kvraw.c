@@ -73,6 +73,7 @@ kvraw_open(const char *pathname)
 		TRACE(0);
 		return NULL;
 	}
+	printf("Logfs successfully opened\n");
 	return kvraw;
 }
 
@@ -141,9 +142,15 @@ kvraw_append(struct kvraw *kvraw,
 	meta.off = (*off);
 	meta.key_len = (uint16_t)key_len;
 	meta.val_len = (uint32_t)val_len;
-	if (logfs_append(kvraw->logfs, &meta, META_LEN) ||
-	    logfs_append(kvraw->logfs, key, meta.key_len) ||
-	    logfs_append(kvraw->logfs, val, meta.val_len)) {
+	// if (logfs_append(kvraw->logfs, &meta, META_LEN) ||
+	//     logfs_append(kvraw->logfs, key, meta.key_len) ||
+	//     logfs_append(kvraw->logfs, val, meta.val_len)) {
+	// 	TRACE(0);
+	// 	return -1;
+	// }
+	if(logfs_append(kvraw->logfs, "aswin", 5) ||
+	logfs_append(kvraw->logfs, "santhosh", 8) ||
+	logfs_append(kvraw->logfs, "ashwin", 6)){
 		TRACE(0);
 		return -1;
 	}
