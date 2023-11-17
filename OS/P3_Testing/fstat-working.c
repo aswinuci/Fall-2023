@@ -6,7 +6,7 @@
 int main() {
     const char *filename = "file"; // The name of the file you created with dd
 
-    int fd = open(filename, O_RDONLY);
+    int fd = open(filename, O_RDWR);
     if (fd == -1) {
         perror("open");
         return 1;
