@@ -148,9 +148,8 @@ kvraw_append(struct kvraw *kvraw,
 	// 	TRACE(0);
 	// 	return -1;
 	// }
-	if(logfs_append(kvraw->logfs, "aswin", 5) ||
-	logfs_append(kvraw->logfs, "santhosh", 8) ||
-	logfs_append(kvraw->logfs, "ashwin", 6)){
+	if(
+	logfs_append(kvraw->logfs, "fghijklm", 8)){
 		TRACE(0);
 		return -1;
 	}
