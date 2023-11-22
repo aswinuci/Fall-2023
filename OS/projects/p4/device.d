@@ -1,2 +1,1 @@
--MM
-device.c
+device.o: device.c device.h system.h

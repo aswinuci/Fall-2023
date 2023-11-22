@@ -1,2 +1,1 @@
--MM
-term.c
+term.o: term.c system.h term.h

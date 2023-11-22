@@ -1,92 +1,147 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+/**
+ * Tony Givargis
+ * Copyright (C), 2023
+ * University of California, Irvine
+ *
+ * CS 238P - Operating Systems
+ * logfs.c
+ */
+
 #include <pthread.h>
 #include "device.h"
 #include "logfs.h"
+#include <unistd.h>
+#include "system.h"
 
-#define MAX_QUEUE_SIZE 1024
-pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
-pthread_cond_t condition = PTHREAD_COND_INITIALIZER;
-pthread_t producer_thread, consumer_thread;
-int array_index=0;
+#define WCACHE_BLOCKS 32
+#define RCACHE_BLOCKS 256
 
-struct logfs {
+/**
+ * Needs:
+ *   pthread_create()
+ *   pthread_join()
+ *   pthread_mutex_init()
+ *   pthread_mutex_destroy()
+ *   pthread_mutex_lock()
+ *   pthread_mutex_unlock()
+ *   pthread_cond_init()
+ *   pthread_cond_destroy()
+ *   pthread_cond_wait()
+ *   pthread_cond_signal()
+ */
+
+/* research the above Needed API and design accordingly */
+
+#define MAX_SIZE 8192
+
+char queue[MAX_SIZE];
+int queue_size = 0;
+int batch_size = 4096;
+int count = 1;
+int remaining = 0;
+
+struct logfs
+{
+    pthread_mutex_t mutex;
     struct device *device;
-    char *queue[MAX_QUEUE_SIZE];
-    const void *buf;
-    uint64_t buf_len;
+    pthread_cond_t cond;
+    pthread_t consumer;
+    int lastPrintedIndex;
 };
 
-void *consumer(void *arg) {
-    printf("Consumed called with array_index: %d\n", array_index);
+void *threadFunction(void *arg)
+{
     struct logfs *logfs = (struct logfs *)arg;
-    while (1) {
-        pthread_mutex_lock(&mutex);
-        if (array_index > 0) {
-            printf("Consumed array: ");
-            int start = 0;
-            for (int i = start; i < array_index; ++i) {
-                printf("%c ", *logfs->queue[i]);
-                // free(logfs->queue[i]); // Freeing memory after consumption
-                // logfs->queue[i] = NULL;
-            }
-            printf("\n");
-
-            array_index = 0; // Reset the array index after consuming
+    while (1)
+    {
+        pthread_mutex_lock(&logfs->mutex);
+        while (queue_size == 0)
+        {
+            pthread_cond_wait(&logfs->cond, &logfs->mutex);
         }
-        pthread_mutex_unlock(&mutex);
-    }
-    pthread_exit(NULL);
-}
-
-
-int producer(struct logfs *logfs, void* data, uint64_t len){
-    char* input_data = (char*)data;
-    int data_length = (int)len;
-
-    pthread_mutex_lock(&mutex);
-    for (int i = 0; i < data_length; ++i) {
-        logfs->queue[array_index] = (char*)malloc(sizeof(char));
-        *logfs->queue[array_index] = input_data[i];
-        printf("Produced: %c at index %d\n", *logfs->queue[array_index], array_index);
-        array_index++;
-
-        if (array_index % 5 == 0) {
-            pthread_cond_signal(&condition);
-            us_sleep(1000000);
+        printf("Wait finished\n");
+        char *buf;
+        char *writeData;
+        buf = (char *)malloc(batch_size);
+        for (int i = logfs->lastPrintedIndex; i < MIN(logfs->lastPrintedIndex + batch_size, queue_size); i++)
+        {
+            buf[i - logfs->lastPrintedIndex] = queue[i];
         }
+        writeData = (char *)malloc(batch_size);
+        if (writeData == NULL)
+        {
+            // Handle memory allocation failure
+            return NULL;
+        }
+        const char alphabet[] = "abcdefghijklmnopqrstuvwxyz";
+        const int alphabetSize = sizeof(alphabet) - 1; // Exclude null terminator
+
+        for (int i = 0; i < batch_size; ++i)
+        {
+            writeData[i] = alphabet[i % alphabetSize];
+        }
+        printf("Begin Writing\n");
+        device_write(logfs->device, (void *)writeData, logfs->lastPrintedIndex, strlen(writeData));
+        printf("End Writing\n");
+        count++;
+        logfs->lastPrintedIndex = logfs->lastPrintedIndex + batch_size;
+        pthread_mutex_unlock(&logfs->mutex);
     }
-    pthread_mutex_unlock(&mutex);
     return 0;
 }
 
-int logfs_append(struct logfs *logfs, const void *buf, uint64_t len){
-    return producer(logfs, (void *)buf, len);
+struct logfs *logfs_open(const char *pathname)
+{
+    struct logfs *logfs = (struct logfs *)malloc(sizeof(struct logfs));
+    logfs->device = device_open(pathname);
+    pthread_mutex_init(&logfs->mutex, NULL);
+    pthread_cond_init(&logfs->cond, NULL);
+    pthread_create(&logfs->consumer, NULL, threadFunction, logfs);
+    printf("Thread Created\n");
+    logfs->lastPrintedIndex = 0;
+    return logfs;
 }
 
-struct logfs *logfs_open(const char *pathname) {
-    struct logfs *new_logfs = (struct logfs *)malloc(sizeof(struct logfs));
-    if (new_logfs == NULL) {
-        return NULL;
+void logfs_close(struct logfs *logfs)
+{
+
+    printf("Last Printed Index = %d and Queue size %d\n", logfs->lastPrintedIndex, queue_size);
+    for (int i = 0; i < queue_size; i++)
+    {
+        printf("%c", queue[i]);
     }
-    
-    new_logfs->device = device_open(pathname);
-    memset(new_logfs->queue, 0, MAX_QUEUE_SIZE * sizeof(void *));
-    new_logfs->buf = NULL;
-    new_logfs->buf_len = 0;
-
-    pthread_create(&producer_thread, NULL, (void *(*)(void *))producer, new_logfs); // Creating the producer thread
-    pthread_create(&consumer_thread, NULL, consumer, new_logfs); // Creating the consumer thread
-
-    return new_logfs;
-}
-
-void logfs_close(struct logfs *logfs){
-    device_close(logfs->device);
+    printf("\n");
+    pthread_join(logfs->consumer, NULL);
+    pthread_cond_destroy(&logfs->cond);
+    pthread_mutex_destroy(&logfs->mutex);
     free(logfs);
 }
 
-int logfs_read(struct logfs *logfs, void *buf, uint64_t off, size_t len){
+int logfs_read(struct logfs *logfs, void *buf, uint64_t off, size_t len)
+{
+    // pthread_mutex_lock(&logfs->mutex);
+    // remaining = 1;
+    // pthread_cond_signal(&logfs->cond);
+    // pthread_mutex_unlock(&logfs->mutex);
+    int someStupidVar = (int)off + (int)len + (int)strlen(buf) + (int)(logfs->lastPrintedIndex);
+    return 0 * someStupidVar;
+}
+
+int logfs_append(struct logfs *logfs, const void *buf, uint64_t len)
+{
+    pthread_mutex_lock(&logfs->mutex);
+    for (int i = 0; i < (int)len; i++)
+    {
+        printf("Appending %c\n", ((char *)buf)[i]);
+        queue[queue_size] = ((char *)buf)[i];
+        queue_size++;
+        // if (queue_size % batch_size == 0)
+        // {
+        //     printf("----------Signal\n");
+        // }
+    }
+    pthread_cond_signal(&logfs->cond);
+    // printf("buffer %s\n",(char*)buf);
+    pthread_mutex_unlock(&logfs->mutex);
     return 0;
 }

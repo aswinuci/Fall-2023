@@ -1,2 +1,1 @@
--MM
-kvraw.c
+kvraw.o: kvraw.c logfs.h system.h kvraw.h

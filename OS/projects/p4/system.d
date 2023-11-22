@@ -1,2 +1,1 @@
--MM
-system.c
+system.o: system.c system.h

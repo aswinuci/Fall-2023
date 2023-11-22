@@ -1,2 +1,1 @@
--MM
-index.c
+index.o: index.c index.h system.h

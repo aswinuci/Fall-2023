@@ -137,6 +137,7 @@ device_write(struct device *device,
 	     uint64_t off,
 	     uint64_t len)
 {
+	printf("Block size , offset and length %d %d %d\n",(int)device->block,(int)off,(int)len);
 	assert( !len || buf );
 	assert( 0 == (off % device->block) );
 	assert( 0 == (len % device->block) );
@@ -164,6 +165,6 @@ uint64_t
 device_block(const struct device *device)
 {
 	assert( device );
-
+	printf("Block size %d\n",(int)device->block);
 	return device->block;
 }
