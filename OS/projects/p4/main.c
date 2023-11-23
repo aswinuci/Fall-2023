@@ -131,7 +131,7 @@ read_write(const uint64_t N, const uint64_t K, const uint64_t V)
 	return 0;
 }
 
-static int read_write_large(void)  { return read_write(1234, 1234, 1234); }
+static int read_write_large(void)  { return read_write(1234, 20000, 20000); }
 static int read_write_small(void)  { return read_write(1234,  123,  123); }
 static int read_write_single(void) { return read_write(   1,   23,   23); }
 
@@ -316,11 +316,11 @@ main(int argc, char *argv[])
 
 	/* test */
 
-	TEST(basic_logic, "basic_logic");
+	//TEST(basic_logic, "basic_logic");
 	//TEST(heavy_rewrite, "heavy_rewrite");
 	// TEST(read_write_single, "read_write_single");
 	//TEST(read_write_small, "read_write_small");
-	//TEST(read_write_large, "read_write_large");
+	TEST(read_write_large, "read_write_large");
 
 	/* postlude */
 
