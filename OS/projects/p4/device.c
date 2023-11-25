@@ -85,7 +85,7 @@ device_open(const char *pathname)
 		return NULL;
 	}
 	memset(device, 0, sizeof (struct device));
-	if (0 >= (device->fd = open(pathname, O_DIRECT | O_RDWR))) {
+	if (0 >= (device->fd = open(pathname,O_RDWR))) {
 		if (EACCES == errno) {
 			device_close(device);
 			TRACE("no volume access");
@@ -127,7 +127,8 @@ device_read(struct device *device, void *buf, uint64_t off, uint64_t len)
 	assert( (off + len) <= device->size );
 
 	if (len != (uint64_t)pread(device->fd, buf, (size_t)len, (off_t)off)) {
-		TRACE("pread()");
+		printf("Error code: %d\n", errno);
+		printf("Error description: %s\n", strerror(errno));
 		return -1;
 	}
 	return 0;
@@ -139,17 +140,10 @@ device_write(struct device *device,
 	     uint64_t off,
 	     uint64_t len)
 {
-	printf("Block size , offset and length %d %d %d\n",(int)device->block,(int)off,(int)len);
 	assert( !len || buf );
 	assert( 0 == (off % device->block) );
 	assert( 0 == (len % device->block) );
 	assert( (off + len) <= device->size );
-	printf("Buffer %s\n",(char*)buf);
-	printf("Offset %d\n",(int)off);
-	printf("Length %d\n",(int)len);
-
-	device->fd = open("file", O_RDWR);
-	printf("Inside device write File descriptor %d\n",device->fd);
 	 if (device->fd == -1) {
         perror("Error opening device");
         return 1;
