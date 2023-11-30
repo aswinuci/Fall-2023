@@ -100,7 +100,6 @@ device_open(const char *pathname)
 		TRACE(0);
 		return NULL;
 	}
-	printf("Device Opened and its attributes \n Device fd %d\n Device Size %d\n Device Block %d\n",device->fd,(int)device->size,(int)device->block);
 	return device;
 }
 
@@ -148,7 +147,6 @@ device_write(struct device *device,
         perror("Error opening device");
         return 1;
     }
-
 	if (len != (uint64_t)pwrite(device->fd,
 				    buf,
 				    (size_t)len,
@@ -173,6 +171,5 @@ uint64_t
 device_block(const struct device *device)
 {
 	assert( device );
-	printf("Block size %d\n",(int)device->block);
 	return device->block;
 }
