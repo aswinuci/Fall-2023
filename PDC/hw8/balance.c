@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
 #define LMIN 10
 #define LMAX 1000
@@ -150,13 +151,10 @@ int simulate(int processorArraySize)
                 processorLoadUnits[leftNeighborIndex] = avgLoadUnits;
             }
         }
-        // printf("Updated load units at time: %d:\n", timeTaken);
-        // debug(processorLoadUnits, processorArraySize);
         if (checkbalanced(processorArraySize) == 1)
         {
             break;
         }
-        // printf("\n");
         timeTaken++;
     }
     return timeTaken;
@@ -173,21 +171,16 @@ int main(int argc, char const *argv[])
         memset(processorLoadUnits, 0, sizeof(processorLoadUnits));
         memset(processorTimeUnits, 0, sizeof(processorTimeUnits));
         int processorArraySize = k_values[i];
-        printf("Assigning load units to processors\n");
         assignProcessorLoadUnits(processorArraySize);
-        debug(processorLoadUnits, processorArraySize);
-        printf("Assigning time units to processors\n");
         assignProcessorTimeUnits(processorArraySize);
-        debug(processorTimeUnits, processorArraySize);
-        printf("Updating hash table\n");
         updateHashTable(processorArraySize);
-        debugHashTable();
         int timeTaken = simulate(processorArraySize);
+        int numberOfCycles = ceil(timeTaken / DMAX);
         if (timeTaken == MAX_CYCLES)
-            printf("Not possible to balance\n");
+            printf("Not possible to balance %d processors in %d cycles \n", k_values[i], numberOfCycles);
         else
         {
-            printf("Time taken to balance: %d\n", timeTaken);
+            printf("Number of cycles taken to balance for %d processors: %d\n", k_values[i], numberOfCycles);
             printf("-----------------------------------\n");
         }
     }
