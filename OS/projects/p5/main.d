@@ -1,9 +1,1 @@
--pedantic
--Wall
--Wextra
--Werror
--Wfatal-errors
--fpic
--O3
--MM
-main.c
+main.o: main.c system.h
