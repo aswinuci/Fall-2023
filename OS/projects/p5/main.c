@@ -3,17 +3,37 @@
 #include <signal.h>
 #include "system.h"
 
+#define MAX_LINE_LENGTH 256
+#define PROC_STAT "/proc/stat"
 #define MEMINFO_PATH "/proc/meminfo"
 #define NET_DEV_PATH "/proc/net/dev"
-#define PROC_STAT "/proc/stat"
 #define NETWORK_INTERFACE "eno1"
-#define MAX_LINE_LENGTH 256
 #define DEVICE_NAME "loop20"
 #define DEVICE_PATH "/dev/" + DEVICE_NAME
+#define DISK_PATH "/proc/diskstats" 
+
+static volatile int done;
+
+static void
+_signal_(int signum)
+{
+    assert(SIGINT == signum);
+    done = 1;
+}
+
+void clearConsoleLine(int chars)
+{  
+    printf("\r");
+    for (int i = 0; i < chars; i++)
+    {
+        printf(" ");
+    }
+    printf("\rDone!\n");
+}
 
 void getNetworkStats(const char *interface_name)
 {
-    FILE *file = fopen("/proc/net/dev", "r");
+    FILE *file = fopen(NET_DEV_PATH, "r");
     if (file == NULL)
     {
         perror("Error opening file");
@@ -42,7 +62,7 @@ void readDiskStats() {
     char line[MAX_LINE_LENGTH];
      FILE *file;
     // Open /proc/diskstats
-    file = fopen("/proc/diskstats", "r");
+    file = fopen(DISK_PATH, "r");
     while (fgets(line, sizeof(line), file) != NULL) {
         unsigned int major, minor;
         char dev_name[20];
@@ -63,18 +83,7 @@ void readDiskStats() {
     fclose(file);
 }
 
-
-static volatile int done;
-
-static void
-_signal_(int signum)
-{
-    assert(SIGINT == signum);
-    done = 1;
-}
-
-double
-cpu_util(const char *s)
+double cpu_util(const char *s)
 {
     static unsigned sum_, vector_[7];
     unsigned sum, vector[7];
@@ -163,7 +172,6 @@ double memory_util()
     return memory_used_percentage;
 }
 
-// Add memory utilization calculation to the main loop
 int main(int argc, char *argv[])
 {
     char line[1024];
@@ -203,6 +211,6 @@ int main(int argc, char *argv[])
         us_sleep(1000000);
       // printf("\033[3A");
     }
-    printf("\rDone                                                                                                     \n");
+    clearConsoleLine(100);
     return 0;
 }
