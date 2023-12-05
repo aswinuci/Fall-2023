@@ -94,10 +94,6 @@ int checkbalanced(int processorArraySize)
             return 0;
         }
     }
-    if(abs(processorLoadUnits[0] - processorLoadUnits[processorArraySize - 1]) > 1)
-    {
-        return 0;
-    }
     printf("Balanced\n");
     return 1;
 }
