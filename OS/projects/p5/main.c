@@ -6,9 +6,9 @@
 #define MEMINFO_PATH "/proc/meminfo"
 #define NET_DEV_PATH "/proc/net/dev"
 #define PROC_STAT "/proc/stat"
-#define NETWORK_INTERFACE "eno1"
+#define NETWORK_INTERFACE "wlo1"
 #define MAX_LINE_LENGTH 256
-#define DEVICE_NAME "loop0"
+#define DEVICE_NAME "loop21"
 #define DEVICE_PATH "/proc/diskstats"
 
 static volatile int done;
@@ -17,9 +17,6 @@ static void
 _signal_(int signum)
 {
     assert(SIGINT == signum);
-    printf("\n");
-    printf("\n");
-    printf("\n");
     done = 1;
 }
 
@@ -111,14 +108,17 @@ double memory_util()
     return memory_used_percentage;
 }
 
-void getNetworkStats(const char *interface_name)
+long long unsigned int* getNetworkStats(const char *interface_name)
 {
     FILE *file = fopen(NET_DEV_PATH, "r");
+    long long unsigned int *stats = malloc(sizeof(long long unsigned int) * 2);
     if (file == NULL)
     {
         perror("Error opening file");
-        return;
+        TRACE("fopen()");
+        return stats;
     }
+
 
     char line[MAX_LINE_LENGTH];
 
@@ -129,20 +129,24 @@ void getNetworkStats(const char *interface_name)
             unsigned long long packets_received, packets_transmitted;
             sscanf(line + strcspn(line, ":") + 1, "%llu %*u %*u %*u %*u %*u %*u %*u %*u %llu",
                    &packets_received, &packets_transmitted);
-            printf("Transmitted packets: %llu | Received packets: %llu\n", packets_transmitted, packets_received);
+            //printf("Transmitted packets: %llu | Received packets: %llu\n", packets_transmitted, packets_received);
+            stats[0] = packets_transmitted;
+            stats[1] = packets_received;
             fflush(stdout);
             fclose(file);
-            return;
+            return stats;
         }
     }
+    return stats;
     fclose(file);
 }
 
-void readDiskStats()
+long long unsigned int* readDiskStats()
 {
     char line[MAX_LINE_LENGTH];
     FILE *file;
     file = fopen(DEVICE_PATH, "r");
+    long long unsigned int *stats = malloc(sizeof(long long unsigned int) * 2);
     while (fgets(line, sizeof(line), file) != NULL)
     {
         unsigned int major, minor;
@@ -157,12 +161,15 @@ void readDiskStats()
 
             if (strcmp(dev_name, DEVICE_NAME) == 0)
             {
-                printf("Reads: %llu | Writes: %llu\n", reads_completed, writes_completed);
+                //printf("Reads: %llu | Writes: %llu\n", reads_completed, writes_completed);
+                stats[0] = reads_completed;
+                stats[1] = writes_completed;
                 fflush(stdout);
-                return;
+                return stats;
             }
         }
     }
+    return stats;
     printf("Device not found\n");
     fclose(file);
 }
@@ -181,15 +188,16 @@ int main(int argc, char *argv[])
 
     while (!done)
     {
-        printf("CPU Utilization: %5.1f%% | Memory Utilization: %5.1f%%\n", cpu_util(), memory_util());
+        printf("\rCPU: %5.1f%% | Memory: %5.1f%% Transmitted: %llu | Received: %llu | Reads: %llu Writes: %llu", 
+        cpu_util(), memory_util(), getNetworkStats(NETWORK_INTERFACE)[0], getNetworkStats(NETWORK_INTERFACE)[1], readDiskStats()[0],readDiskStats()[1]);
         fflush(stdout);
-        getNetworkStats(NETWORK_INTERFACE);
-        fflush(stdout);
-        readDiskStats();
-        fflush(stdout);
+        // getNetworkStats(NETWORK_INTERFACE);
+        // fflush(stdout);
+        // readDiskStats();
+        // fflush(stdout);
         us_sleep(1000000);
-        printf("\033[3A");
+        //printf("\033[3A");
     }
-
+    printf("\rDone!                                                                                                          \n");
     return 0;
 }
