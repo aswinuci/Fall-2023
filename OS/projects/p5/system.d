@@ -6,4 +6,4 @@
 -fpic
 -O3
 -MM
-main.c
+system.c
