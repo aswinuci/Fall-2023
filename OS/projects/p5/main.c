@@ -7,7 +7,7 @@
 #define PROC_STAT "/proc/stat"
 #define MEMINFO_PATH "/proc/meminfo"
 #define NET_DEV_PATH "/proc/net/dev"
-#define NETWORK_INTERFACE "eno1"
+#define NETWORK_INTERFACE "wlo1"
 #define DEVICE_NAME "loop20"
 #define DEVICE_PATH "/dev/" + DEVICE_NAME
 #define DISK_PATH "/proc/diskstats" 
@@ -74,6 +74,7 @@ void readDiskStats() {
                    &writes_completed, &writes_merged, &sectors_written, &write_time) == 11) {
             if (strcmp(dev_name, DEVICE_NAME) == 0) {
                 printf("Reads: %llu | Writes: %llu", reads_completed, writes_completed);
+                fclose(file);
                 fflush(stdout);
                 return;
             }
@@ -176,7 +177,6 @@ int main(int argc, char *argv[])
 {
     char line[1024];
     FILE *file;
-    const char *interface_name = "eno1";
     UNUSED(argc);
     UNUSED(argv);
    
@@ -203,13 +203,11 @@ int main(int argc, char *argv[])
            fflush(stdout);
         }
         fclose(file);
-
-        getNetworkStats(interface_name);
+        getNetworkStats(NETWORK_INTERFACE);
         fflush(stdout);
         readDiskStats();
         fflush(stdout);
         us_sleep(1000000);
-      // printf("\033[3A");
     }
     clearConsoleLine(100);
     return 0;
