@@ -17,7 +17,6 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include "device.h"
-#include<string.h>
 
 /**
  * Needs:
@@ -85,7 +84,7 @@ device_open(const char *pathname)
 		return NULL;
 	}
 	memset(device, 0, sizeof (struct device));
-	if (0 >= (device->fd = open(pathname,O_RDWR))) {
+	if (0 >= (device->fd = open(pathname, O_RDWR | O_DIRECT))) {
 		if (EACCES == errno) {
 			device_close(device);
 			TRACE("no volume access");
@@ -100,6 +99,7 @@ device_open(const char *pathname)
 		TRACE(0);
 		return NULL;
 	}
+	printf("Device size and block size %d %d\n", (int)device->size,(int) device->block);
 	return device;
 }
 
@@ -126,8 +126,7 @@ device_read(struct device *device, void *buf, uint64_t off, uint64_t len)
 	assert( (off + len) <= device->size );
 
 	if (len != (uint64_t)pread(device->fd, buf, (size_t)len, (off_t)off)) {
-		printf("Error code: %d\n", errno);
-		printf("Error description: %s\n", strerror(errno));
+		TRACE("pread()");
 		return -1;
 	}
 	return 0;
@@ -143,16 +142,11 @@ device_write(struct device *device,
 	assert( 0 == (off % device->block) );
 	assert( 0 == (len % device->block) );
 	assert( (off + len) <= device->size );
-	 if (device->fd == -1) {
-        perror("Error opening device");
-        return 1;
-    }
+
 	if (len != (uint64_t)pwrite(device->fd,
 				    buf,
 				    (size_t)len,
 				    (off_t)off)) {
-		printf("Error code: %d\n", errno);
-        printf("Error description: %s\n", strerror(errno));
 		TRACE("pwrite()");
 		return -1;
 	}
@@ -171,5 +165,6 @@ uint64_t
 device_block(const struct device *device)
 {
 	assert( device );
+
 	return device->block;
 }
